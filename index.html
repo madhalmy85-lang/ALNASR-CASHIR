@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>كاشير مكتبة النصر</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f2f4f7;
+    color: #222;
+}
+
+header {
+    background: #1f4e79;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 28px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 15px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+input {
+    width: 100%;
+    padding: 14px;
+    margin: 7px 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+button {
+    border: none;
+    padding: 12px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 5px;
+}
+
+.primary {
+    background: #1f4e79;
+    color: white;
+}
+
+.success {
+    background: #198754;
+    color: white;
+}
+
+.danger {
+    background: #dc3545;
+    color: white;
+}
+
+.product {
+    border-bottom: 1px solid #ddd;
+    padding: 12px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.total {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    padding: 20px;
+}
+
+#reader {
+    width: 100%;
+    max-width: 500px;
+    margin: 15px auto;
+}
+
+.hidden {
+    display: none;
+}
+
+.small {
+    color: #666;
+    font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🧾 كاشير مكتبة النصر</h1>
+    <p>نظام المبيعات والباركود</p>
+</header>
+
+<div class="container">
+
+    <!-- إضافة منتج -->
+    <div class="card">
+        <h2>📦 إضافة منتج</h2>
+
+        <input id="barcode"
+               type="text"
+               placeholder="رقم الباركود">
+
+        <input id="productName"
+               type="text"
+               placeholder="اسم المنتج">
+
+        <input id="price"
+               type="number"
+               step="0.01"
+               placeholder="السعر">
+
+        <button class="success" onclick="addProduct()">
+            ➕ حفظ المنتج
+        </button>
+
+        <p class="small">
+            احفظ المنتج مرة واحدة، وبعدها يكفي مسح الباركود لإضافته إلى السلة.
+        </p>
+    </div>
+
+    <!-- قارئ الباركود -->
+    <div class="card">
+        <h2>📷 قارئ الباركود</h2>
+
+        <button class="primary" onclick="startScanner()">
+            تشغيل الكاميرا
+        </button>
+
+        <button class="danger" onclick="stopScanner()">
+            إيقاف الكاميرا
+        </button>
+
+        <div id="reader"></div>
+    </div>
+
+    <!-- السلة -->
+    <div class="card">
+        <h2>🛒 سلة المشتريات</h2>
+
+        <div id="cart">
+            <p>السلة فارغة</p>
+        </div>
+
+        <div class="total">
+            الإجمالي:
+            <span id="total">0.00</span>
+        </div>
+
+        <button class="success" onclick="clearCart()">
+            🗑️ تفريغ السلة
+        </button>
+
+        <button class="primary" onclick="printInvoice()">
+            🧾 طباعة الفاتورة
+        </button>
+    </div>
+
+</div>
+
+<!-- مكتبة قراءة الباركود -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+
+let products = JSON.parse(
+    localStorage.getItem("nasrProducts") || "{}"
+);
+
+let cart = [];
+
+let scanner = null;
+
+
+/* =========================
+   إضافة منتج
+========================= */
+
+function addProduct() {
+
+    const barcode =
+        document.getElementById("barcode").value.trim();
+
+    const name =
+        document.getElementById("productName").value.trim();
+
+    const price =
+        parseFloat(document.getElementById("price").value);
+
+    if (!barcode || !name || isNaN(price)) {
+        alert("يرجى إدخال الباركود والاسم والسعر");
+        return;
+    }
+
+    products[barcode] = {
+        name: name,
+        price: price
+    };
+
+    localStorage.setItem(
+        "nasrProducts",
+        JSON.stringify(products)
+    );
+
+    alert("تم حفظ المنتج بنجاح ✅");
+
+    document.getElementById("barcode").value = "";
+    document.getElementById("productName").value = "";
+    document.getElementById("price").value = "";
+}
+
+
+/* =========================
+   إضافة المنتج للسلة
+========================= */
+
+function addToCart(barcode) {
+
+    const product = products[barcode];
+
+    if (!product) {
+
+        alert(
+            "هذا الباركود غير موجود في المنتجات.\n" +
+            "أضف المنتج أولًا."
+        );
+
+        document.getElementById("barcode").value = barcode;
+
+        return;
+    }
+
+    const existing = cart.find(
+        item => item.barcode === barcode
+    );
+
+    if (existing) {
+
+        existing.quantity++;
+
+    } else {
+
+        cart.push({
+            barcode: barcode,
+            name: product.name,
+            price: product.price,
+            quantity: 1
+        });
+    }
+
+    renderCart();
+}
+
+
+/* =========================
+   عرض السلة
+========================= */
+
+function renderCart() {
+
+    const cartElement =
+        document.getElementById("cart");
+
+    if (cart.length === 0) {
+
+        cartElement.innerHTML =
+            "<p>السلة فارغة</p>";
+
+        document.getElementById("total").textContent =
+            "0.00";
+
+        return;
+    }
+
+    let total = 0;
+
+    cartElement.innerHTML = "";
+
+    cart.forEach((item, index) => {
+
+        const itemTotal =
+            item.price * item.quantity;
+
+        total += itemTotal;
+
+        const div =
+            document.createElement("div");
+
+        div.className = "product";
+
+        div.innerHTML = `
+            <div>
+                <strong>${item.name}</strong><br>
+                السعر: ${item.price.toFixed(2)}<br>
+                الكمية: ${item.quantity}<br>
+                المجموع: ${itemTotal.toFixed(2)}
+            </div>
+
+            <div>
+                <button class="primary"
+                    onclick="increaseQuantity(${index})">
+                    +
+                </button>
+
+                <button class="primary"
+                    onclick="decreaseQuantity(${index})">
+                    -
+                </button>
+
+                <button class="danger"
+                    onclick="removeItem(${index})">
+                    حذف
+                </button>
+            </div>
+        `;
+
+        cartElement.appendChild(div);
+    });
+
+    document.getElementById("total").textContent =
+        total.toFixed(2);
+}
+
+
+/* =========================
+   زيادة الكمية
+========================= */
+
+function increaseQuantity(index) {
+
+    cart[index].quantity++;
+
+    renderCart();
+}
+
+
+/* =========================
+   إنقاص الكمية
+========================= */
+
+function decreaseQuantity(index) {
+
+    if (cart[index].quantity > 1) {
+
+        cart[index].quantity--;
+
+    } else {
+
+        cart.splice(index, 1);
+    }
+
+    renderCart();
+}
+
+
+/* =========================
+   حذف منتج
+========================= */
+
+function removeItem(index) {
+
+    cart.splice(index, 1);
+
+    renderCart();
+}
+
+
+/* =========================
+   تفريغ السلة
+========================= */
+
+function clearCart() {
+
+    if (cart.length === 0) return;
+
+    if (confirm("هل تريد تفريغ السلة؟")) {
+
+        cart = [];
+
+        renderCart();
+    }
+}
+
+
+/* =========================
+   تشغيل الكاميرا
+========================= */
+
+function startScanner() {
+
+    if (scanner) return;
+
+    scanner = new Html5Qrcode("reader");
+
+    scanner.start(
+        {
+            facingMode: "environment"
+        },
+        {
+            fps: 10,
+            qrbox: {
+                width: 250,
+                height: 150
+            }
+        },
+
+        (decodedText) => {
+
+            addToCart(decodedText);
+
+        },
+
+        (errorMessage) => {
+            // تجاهل أخطاء البحث العادية
+        }
+
+    ).catch(error => {
+
+        alert(
+            "تعذر تشغيل الكاميرا. تأكد من السماح للمتصفح باستخدام الكاميرا."
+        );
+
+        scanner = null;
+    });
+}
+
+
+/* =========================
+   إيقاف الكاميرا
+========================= */
+
+function stopScanner() {
+
+    if (!scanner) return;
+
+    scanner.stop()
+        .then(() => {
+
+            scanner.clear();
+
+            scanner = null;
+
+        })
+        .catch(() => {
+
+            scanner = null;
+
+        });
+}
+
+
+/* =========================
+   طباعة الفاتورة
+========================= */
+
+function printInvoice() {
+
+    if (cart.length === 0) {
+
+        alert("السلة فارغة");
+
+        return;
+    }
+
+    let total = 0;
+
+    let invoiceItems = "";
+
+    cart.forEach(item => {
+
+        const itemTotal =
+            item.price * item.quantity;
+
+        total += itemTotal;
+
+        invoiceItems += `
+            <tr>
+                <td>${item.name}</td>
+                <td>${item.quantity}</td>
+                <td>${item.price.toFixed(2)}</td>
+                <td>${itemTotal.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+
+    const invoiceNumber =
+        Date.now();
+
+    const date =
+        new Date().toLocaleString("ar");
+
+    const invoice = `
+<!DOCTYPE html>
+
+<html lang="ar" dir="rtl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>فاتورة مكتبة النصر</title>
+
+<style>
+
+body {
+    font-family: Arial;
+    padding: 30px;
+}
+
+h1, h2 {
+    text-align: center;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #333;
+    padding: 10px;
+    text-align: center;
+}
+
+.total {
+    font-size: 22px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>مكتبة النصر</h1>
+
+<h2>فاتورة مبيعات</h2>
+
+<p>
+رقم الفاتورة: ${invoiceNumber}
+</p>
+
+<p>
+التاريخ: ${date}
+</p>
+
+<table>
+
+<tr>
+<th>المنتج</th>
+<th>الكمية</th>
+<th>السعر</th>
+<th>المجموع</th>
+</tr>
+
+${invoiceItems}
+
+</table>
+
+<div class="total">
+الإجمالي: ${total.toFixed(2)}
+</div>
+
+<script>
+window.onload = function() {
+    window.print();
+};
+<\/script>
+
+</body>
+
+</html>
+`;
+
+    const win =
+        window.open("", "_blank");
+
+    win.document.write(invoice);
+
+    win.document.close();
+}
+
+</script>
+
+</body>
+</html>
