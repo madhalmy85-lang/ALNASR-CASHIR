@@ -107,7 +107,7 @@ button {
     font-size: 14px;
 }
 </style>
-</head>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script></head>
 
 <body>
 
@@ -117,7 +117,36 @@ button {
 </header>
 
 <div class="container">
+<!-- إنشاء باركود -->
+<div class="card">
+    <h2>🏷️ إنشاء باركود</h2>
 
+    <input id="barcodeProductName"
+           type="text"
+           placeholder="اسم المنتج">
+
+    <input id="barcodeProductPrice"
+           type="number"
+           step="0.01"
+           placeholder="السعر">
+
+    <button class="primary" onclick="generateBarcode()">
+        🔲 إنشاء الباركود
+    </button>
+
+    <div style="text-align:center; margin-top:20px;">
+        <svg id="barcodePreview"></svg>
+    </div>
+
+    <p id="generatedBarcode"
+       style="text-align:center; font-weight:bold;">
+    </p>
+
+    <button class="success"
+            onclick="printBarcode()">
+        🖨️ طباعة الباركود
+    </button>
+</div>
     <!-- إضافة منتج -->
     <div class="card">
         <h2>📦 إضافة منتج</h2>
