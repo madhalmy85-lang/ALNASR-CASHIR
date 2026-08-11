@@ -636,7 +636,139 @@ window.onload = function() {
 
     win.document.close();
 }
+function generateBarcode() {
+    const name = document.getElementById("productName").value.trim();
+    const price = document.getElementById("productPrice").value.trim();
 
+    if (!name || !price) {
+        alert("يرجى إدخال اسم المنتج والسعر أولاً");
+        return;
+    }
+
+    const barcode = String(Date.now()).slice(-12);
+
+    JsBarcode("#barcodePreview", barcode, {
+        format: "CODE128",
+        width: 2,
+        height: 80,
+        displayValue: true,
+        margin: 10
+    });
+
+    document.getElementById("generatedBarcode").textContent =
+        "رقم الباركود: " + barcode;
+
+    const barcodeInput = document.getElementById("barcode");
+    if (barcodeInput) {
+        barcodeInput.value = barcode;
+    }
+
+    const name = document.getElementById("barcodeProductName").value.trim();
+    const price = document.getElementById("barcodeProductPrice").value.trim();
+
+    if (!name || !price) {
+        alert("يرجى إدخال اسم المنتج والسعر أولاً");
+        return;
+    }
+
+    // إنشاء رقم باركود فريد
+    const barcode = String(Date.now()).slice(-10);
+
+    // رسم الباركود
+    JsBarcode("#barcodePreview", barcode, {
+        format: "CODE128",
+        width: 2,
+        height: 80,
+        displayValue: true,
+        margin: 10
+    });
+
+    // إظهار رقم الباركود
+    document.getElementById("generatedBarcode").textContent =
+        "رقم الباركود: " + barcode;
+
+    // وضع الرقم تلقائياً في خانة الباركود
+    document.getElementById("barcode").value = barcode;
+}
+
+function printBarcode() {
+    const barcode = document.getElementById("barcodePreview");
+
+    if (!barcode || !barcode.innerHTML.trim()) {
+        alert("أنشئ الباركود أولاً");
+        return;
+    }
+
+    const name =
+        document.getElementById("barcodeProductName").value.trim();
+
+    const price =
+        document.getElementById("barcodeProductPrice").value.trim();
+
+    const win = window.open("", "_blank");
+
+    win.document.write(`
+        <!DOCTYPE html>
+        <html lang="ar" dir="rtl">
+        <head>
+            <meta charset="UTF-8">
+            <title>باركود - مكتبة النصر</title>
+            <style>
+                body {
+                    font-family: Arial;
+                    text-align: center;
+                    padding: 30px;
+                }
+
+                svg {
+                    max-width: 350px;
+                }
+
+                h2 {
+                    margin-bottom: 10px;
+                }
+            </style>
+        </head>
+        <body>
+            <h2>مكتبة النصر</h2>
+            <p>${name}</p>
+            <p>السعر: ${price}</p>
+            ${barcode.outerHTML}
+
+            <script>
+                window.onload = function() {
+                    window.print();
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+
+    win.document.close();
+function generateBarcode() {
+    const name = document.getElementById("barcodeProductName").value.trim();
+    const price = document.getElementById("barcodeProductPrice").value.trim();
+
+    if (!name || !price) {
+        alert("يرجى إدخال اسم المنتج والسعر أولاً");
+        return;
+    }
+
+    const barcode = String(Date.now()).slice(-10);
+
+    JsBarcode("#barcodePreview", barcode, {
+        format: "CODE128",
+        width: 2,
+        height: 80,
+        displayValue: true,
+        margin: 10
+    });
+
+    document.getElementById("generatedBarcode").textContent =
+        "رقم الباركود: " + barcode;
+
+    document.getElementById("barcode").value = barcode;
+}}
 </script>
 
 </body>
